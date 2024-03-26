@@ -26,10 +26,14 @@ let Article = require('./models/article');
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
 
-// Body Parser Middleware: parse application/x-www-form-urlencoded
-app.use(bodyParser.urlencoded({ extended: false }))
+// Body Parser Middleware
+// parse application/x-www-form-urlencoded
+app.use(bodyParser.urlencoded({ extended: false }));
 // parse application/json
-app.use(bodyParser.json())
+app.use(bodyParser.json());
+
+// set public folder
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Home route
 app.get('/', async (req, res) => {
@@ -43,6 +47,20 @@ app.get('/', async (req, res) => {
         title: 'Articles',
         articles: articles
     })
+});
+
+// Get single article
+app.get('/article/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        let article = await Article.findById(id).exec();
+        console.log(article);
+        res.render('article', {
+        article: article
+    })
+    } catch (err) {
+        console.log(err);
+    }
 });
 
 // Add route
