@@ -87,6 +87,40 @@ app.post('/articles/add', (req, res) => {
     });
 });
 
+// Load Edit form
+app.get('/article/edit/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        let article = await Article.findById(id).exec();
+        console.log(article);
+        res.render('edit_article', {
+        title: 'Edit Article',
+        article: article
+    })
+    } catch (err) {
+        console.log(err);
+    }
+});
+
+// Update Submit POST route
+app.post('/articles/edit/:id', (req, res) => {
+    let article = {};
+    article.title = req.body.title;
+    article.author = req.body.author;
+    article.body = req.body.body;
+
+    let query = {_id:req.params.id}
+
+    Article.updateOne(query, article).then((err) => {
+        if(err){
+            console.log(err);
+            return;
+        } else {
+            res.redirect('/');
+        }
+    });
+});
+
 // Start server
 app.listen(3000, () => {
     console.log('Server started on port 3000...')
