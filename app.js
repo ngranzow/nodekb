@@ -2,6 +2,9 @@ const express = require('express');
 const path = require('path');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const expressValidator = require('express-validator');
+const flash = require('connect-flash');
+const session = require('express-session');
 
 mongoose.connect('mongodb://localhost/nodekb');
 let db = mongoose.connection;
@@ -35,6 +38,38 @@ app.use(bodyParser.json());
 // set public folder
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Express Session Middleware
+app.use(session({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: { secure: true }
+}));
+
+// Express Messages Middleware
+app.use(require('connect-flash')());
+app.use(function (req, res, next) {
+    res.locals.messages = require('express-messages')(req, res);
+    next();
+});
+
+// Express Validator Middleware
+app.use(expressValidator({
+    errorFormatter: function (param, msg, value) {
+        var namespace = param.split('.'),
+            root = namespace.shift(),
+            formParam = root;
+        while (namespace.length) {
+            formParam += '[' + namespace.shift() + ']';
+        }
+        return {
+            param: formParam,
+            msg: msg,
+            value: value
+        };
+    }
+}));
+
 // Home route
 app.get('/', async (req, res) => {
     let articles = {};
@@ -56,8 +91,8 @@ app.get('/article/:id', async (req, res) => {
         let article = await Article.findById(id).exec();
         console.log(article);
         res.render('article', {
-        article: article
-    })
+            article: article
+        })
     } catch (err) {
         console.log(err);
     }
@@ -66,7 +101,7 @@ app.get('/article/:id', async (req, res) => {
 // Add route
 app.get('/articles/add', (req, res) => {
     res.render('add_article', {
-        title:'Add Article'
+        title: 'Add Article'
     });
 })
 
@@ -78,10 +113,11 @@ app.post('/articles/add', (req, res) => {
     article.body = req.body.body;
 
     article.save().then((err) => {
-        if(err){
+        if (err) {
             console.log(err);
             return;
         } else {
+            req.flash('success', 'Article Added');
             res.redirect('/');
         }
     });
@@ -94,9 +130,9 @@ app.get('/article/edit/:id', async (req, res) => {
         let article = await Article.findById(id).exec();
         console.log(article);
         res.render('edit_article', {
-        title: 'Edit Article',
-        article: article
-    })
+            title: 'Edit Article',
+            article: article
+        })
     } catch (err) {
         console.log(err);
     }
@@ -109,10 +145,10 @@ app.post('/articles/edit/:id', (req, res) => {
     article.author = req.body.author;
     article.body = req.body.body;
 
-    let query = {_id:req.params.id}
+    let query = { _id: req.params.id }
 
     Article.updateOne(query, article).then((err) => {
-        if(err){
+        if (err) {
             console.log(err);
             return;
         } else {
@@ -122,10 +158,10 @@ app.post('/articles/edit/:id', (req, res) => {
 });
 
 app.delete('/article/:id', (req, res) => {
-    let query = {_id:req.params.id}
+    let query = { _id: req.params.id }
 
     Article.deleteOne(query).then((err) => {
-        if(err){
+        if (err) {
             console.log(err);
         }
         res.send('Success');
